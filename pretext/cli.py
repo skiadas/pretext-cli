@@ -20,8 +20,8 @@ from pydantic import ValidationError
 from typing import Any, Callable, List, Literal, Optional
 from functools import update_wrapper
 
-
 from . import (
+    server,
     utils,
     resources,
     core,
@@ -30,7 +30,6 @@ from . import (
     VERSION,
     CORE_COMMIT,
 )
-
 
 from .project import Project
 
@@ -57,6 +56,7 @@ log.addHandler(error_flush_handler)
 
 # Add a decorator to provide nice exception handling for validation errors for all commands. It avoids printing a confusing traceback, and also nicely formats validation errors.
 def nice_errors(f: Callable[..., None]) -> Any:
+
     @click.pass_context
     def try_except(ctx: click.Context, *args: Any, **kwargs: Any) -> Any:
         try:
@@ -83,7 +83,8 @@ def nice_errors(f: Callable[..., None]) -> Any:
                         f"In at least one target, you cannot have @{error['loc'][0]}=\"{error['input']}\".  {error['msg'].replace('Value error, ', '')}"
                     )
                 else:
-                    log.error(f"{error['msg']} ({error['loc']}; {error['type']})")
+                    log.error(
+                        f"{error['msg']} ({error['loc']}; {error['type']})")
             log.debug(
                 "\n------------------------\nException info:\n------------------------\n",
                 exc_info=True,
@@ -91,7 +92,8 @@ def nice_errors(f: Callable[..., None]) -> Any:
             return
         except Exception as e:
             log.error(e)
-            log.debug("Exception info:\n------------------------\n", exc_info=True)
+            log.debug("Exception info:\n------------------------\n",
+                      exc_info=True)
             return
 
     return update_wrapper(try_except, f)
@@ -106,14 +108,16 @@ CONTEXT_SETTINGS = dict(help_option_names=["-h", "--help"])
 # Allow a verbosity command:
 @click_log.simple_verbosity_option(
     log,
-    help="Sets the severity of log messaging: DEBUG for all, INFO (default) for most, then WARNING, ERROR, and CRITICAL for decreasing verbosity.",
+    help=
+    "Sets the severity of log messaging: DEBUG for all, INFO (default) for most, then WARNING, ERROR, and CRITICAL for decreasing verbosity.",
 )
 @click.version_option(VERSION, message=VERSION)
 @click.option(
     "-t",
     "--targets",
     is_flag=True,
-    help='Display list of build/view "targets" available in the project manifest.',
+    help=
+    'Display list of build/view "targets" available in the project manifest.',
 )
 @nice_errors
 def main(ctx: click.Context, targets: bool) -> None:
@@ -144,7 +148,8 @@ def main(ctx: click.Context, targets: bool) -> None:
         logfile = logdir / f"{datetime.datetime.now().strftime('%Y%m%d-%H%M%S')}.log"
         fh = logging.FileHandler(logfile, mode="w")
         fh.setLevel(logging.DEBUG)
-        file_log_format = logging.Formatter("{levelname:<8}: {message}", style="{")
+        file_log_format = logging.Formatter("{levelname:<8}: {message}",
+                                            style="{")
         fh.setFormatter(file_log_format)
         log.addHandler(fh)
         # output info
@@ -156,9 +161,12 @@ def main(ctx: click.Context, targets: bool) -> None:
             log.warning(
                 "Project's CLI version could not be detected from `requirements.txt`."
             )
-            log.warning("Try `pretext init --refresh` to produce a compatible file.")
+            log.warning(
+                "Try `pretext init --refresh` to produce a compatible file.")
         elif utils.requirements_version() != VERSION:
-            log.warning(f"Using CLI version {VERSION} but project's `requirements.txt`")
+            log.warning(
+                f"Using CLI version {VERSION} but project's `requirements.txt`"
+            )
             log.warning(
                 f"is configured to use {utils.requirements_version()}. Consider either installing"
             )
@@ -203,7 +211,8 @@ def support() -> None:
     log.info(f"PreTeXt-CLI version: {VERSION}")
     log.info(f"    PyPI link: https://pypi.org/project/pretextbook/{VERSION}/")
     log.info(f"PreTeXt core resources commit: {CORE_COMMIT}")
-    log.info(f"Runestone Services version: {core.get_runestone_services_version()}")
+    log.info(
+        f"Runestone Services version: {core.get_runestone_services_version()}")
     log.info(f"OS: {platform.platform()}")
     log.info(f"Python version: {platform.python_version()}")
     log.info(f"Current working directory: {Path().resolve()}")
@@ -231,7 +240,10 @@ def support() -> None:
 # pretext devscript
 @main.command(
     short_help="Alias for the developer pretext/pretext script.",
-    context_settings={"help_option_names": [], "ignore_unknown_options": True},
+    context_settings={
+        "help_option_names": [],
+        "ignore_unknown_options": True
+    },
 )
 @click.argument("args", nargs=-1)
 def devscript(args: List[str]) -> None:
@@ -239,10 +251,10 @@ def devscript(args: List[str]) -> None:
     Aliases the core pretext script.
     """
     PY_CMD = sys.executable
-    subprocess.run(
-        [PY_CMD, str(resources.resource_base_path() / "core" / "pretext" / "pretext")]
-        + list(args)
-    )
+    subprocess.run([
+        PY_CMD,
+        str(resources.resource_base_path() / "core" / "pretext" / "pretext")
+    ] + list(args))
 
 
 # pretext new
@@ -291,13 +303,20 @@ def new(template: str, directory: Path, url_template: str) -> None:
         archive = zipfile.ZipFile(io.BytesIO(r.content))
         with tempfile.TemporaryDirectory(prefix="ptxcli_") as tmpdirname:
             archive.extractall(tmpdirname)
-            content_path = [Path(tmpdirname) / i for i in os.listdir(tmpdirname)][0]
-            shutil.copytree(content_path, directory_fullpath, dirs_exist_ok=True)
+            content_path = [
+                Path(tmpdirname) / i for i in os.listdir(tmpdirname)
+            ][0]
+            shutil.copytree(content_path,
+                            directory_fullpath,
+                            dirs_exist_ok=True)
     else:
         log.info(f"Using `{template}` template.")
         # copy project from installed resources
-        with resources.resource_base_path() / "templates" / f"{template}" as template_path:
-            shutil.copytree(template_path, directory_fullpath, dirs_exist_ok=True)
+        with resources.resource_base_path(
+        ) / "templates" / f"{template}" as template_path:
+            shutil.copytree(template_path,
+                            directory_fullpath,
+                            dirs_exist_ok=True)
         # generate missing boilerplate
         with utils.working_directory(directory_fullpath):
             project_path = utils.project_path()
@@ -310,7 +329,8 @@ def new(template: str, directory: Path, url_template: str) -> None:
 
 # pretext init
 @main.command(
-    short_help="Generates/updates CLI-specific files for the current version of PreTeXt-CLI.",
+    short_help=
+    "Generates/updates CLI-specific files for the current version of PreTeXt-CLI.",
     context_settings=CONTEXT_SETTINGS,
 )
 @click.option(
@@ -325,7 +345,8 @@ def new(template: str, directory: Path, url_template: str) -> None:
     "files",
     help="Specify file to refresh.",
     multiple=True,
-    type=click.Choice([r for r in constants.PROJECT_RESOURCES], case_sensitive=False),
+    type=click.Choice([r for r in constants.PROJECT_RESOURCES],
+                      case_sensitive=False),
 )
 @nice_errors
 def init(refresh: bool, files: List[str]) -> None:
@@ -349,12 +370,14 @@ def init(refresh: bool, files: List[str]) -> None:
             log.warning(
                 "Use `pretext init --refresh` to refresh initialization of an existing project"
             )
-            log.warning("or `pretext init --file FILENAME` to refresh a specific file.")
+            log.warning(
+                "or `pretext init --file FILENAME` to refresh a specific file."
+            )
             return
 
-    project.generate_boilerplate(
-        skip_unmanaged=False, update_requirements=True, resources=files
-    )
+    project.generate_boilerplate(skip_unmanaged=False,
+                                 update_requirements=True,
+                                 resources=files)
 
     if project_path is None:
         log.info("Success! Open project.ptx to edit your project manifest.")
@@ -371,24 +394,28 @@ def init(refresh: bool, files: List[str]) -> None:
 
 
 # pretext build
-@main.command(short_help="Build specified target", context_settings=CONTEXT_SETTINGS)
+@main.command(short_help="Build specified target",
+              context_settings=CONTEXT_SETTINGS)
 @click.argument("target_name", required=False, metavar="target")
 @click.option(
     "--clean",
     is_flag=True,
-    help="Destroy output's target directory before build to clean up previously built files",
+    help=
+    "Destroy output's target directory before build to clean up previously built files",
 )
 @click.option(
     "-g",
     "--generate",
     is_flag=True,
-    help="Force (re)generates assets for targets, even if they haven't changed since they were last generated.  (Use `pretext generate` for more fine-grained control of manual asset generation.)",
+    help=
+    "Force (re)generates assets for targets, even if they haven't changed since they were last generated.  (Use `pretext generate` for more fine-grained control of manual asset generation.)",
 )
 @click.option(
     "-q",
     "--no-generate",
     is_flag=True,
-    help="Do not generate assets for target, even if their source has changed since the last time they were generated.",
+    help=
+    "Do not generate assets for target, even if their source has changed since the last time they were generated.",
 )
 @click.option(
     "-x",
@@ -399,7 +426,8 @@ def init(refresh: bool, files: List[str]) -> None:
 @click.option(
     "--no-knowls",
     is_flag=True,
-    help="Use hyperlinks instead of knowls (e.g. for previewing individual sections when knowl files from other sections may not exist)",
+    help=
+    "Use hyperlinks instead of knowls (e.g. for previewing individual sections when knowl files from other sections may not exist)",
 )
 @click.option(
     "--deploys",
@@ -469,9 +497,10 @@ def build(
             log.info(f"Building target {t.name}")
             if xmlid is not None:
                 log.info(f"with root of tree below {xmlid}")
-            t.build(
-                clean=clean, generate=not no_generate, xmlid=xmlid, no_knowls=no_knowls
-            )
+            t.build(clean=clean,
+                    generate=not no_generate,
+                    xmlid=xmlid,
+                    no_knowls=no_knowls)
         log.info("\nSuccess! Run `pretext view` to see the results.\n")
     except ValidationError as e:
         # A validation error at this point must be because the publication file is invalid, which only happens if the /source/directories/@generated|@external attributes are missing.
@@ -495,40 +524,46 @@ def build(
 
 # pretext generate
 @main.command(
-    short_help="Generate specified assets for default target or targets specified by `-t`",
+    short_help=
+    "Generate specified assets for default target or targets specified by `-t`",
     context_settings=CONTEXT_SETTINGS,
 )
-@click.argument(
-    "assets", type=click.Choice(constants.ASSETS, case_sensitive=False), nargs=-1
-)
+@click.argument("assets",
+                type=click.Choice(constants.ASSETS, case_sensitive=False),
+                nargs=-1)
 @click.option(
     "-t",
     "--target",
     "target_name",
     type=click.STRING,
-    help="Name of target to generate assets for (if not specified, first target from manifest is used).",
+    help=
+    "Name of target to generate assets for (if not specified, first target from manifest is used).",
 )
-@click.option(
-    "-x", "--xmlid", type=click.STRING, help="xml:id of element to be generated."
-)
+@click.option("-x",
+              "--xmlid",
+              type=click.STRING,
+              help="xml:id of element to be generated.")
 @click.option(
     "-q",
     "--only-changed",
     is_flag=True,
     default=False,
-    help="Limit generation of assets to only those that have changed since last call to pretext.",
+    help=
+    "Limit generation of assets to only those that have changed since last call to pretext.",
 )
 @click.option(
     "--all-formats",
     is_flag=True,
     default=False,
-    help="Generate all possible asset formats rather than just the defaults for the specified target.",
+    help=
+    "Generate all possible asset formats rather than just the defaults for the specified target.",
 )
 @click.option(
     "--non-pymupdf",
     is_flag=True,
     default=False,
-    help="Used to revert to non-pymupdf (legacy) method for generating svg and png.",
+    help=
+    "Used to revert to non-pymupdf (legacy) method for generating svg and png.",
 )
 @nice_errors
 def generate(
@@ -562,7 +597,9 @@ def generate(
     try:
         target = project.get_target(name=target_name)
     except AssertionError as e:
-        utils.show_target_hints(target_name, project, task="generating assets for")
+        utils.show_target_hints(target_name,
+                                project,
+                                task="generating assets for")
         log.critical("Exiting without completing build.")
         log.debug(e, exc_info=True)
         return
@@ -572,7 +609,8 @@ def generate(
         target.generate_assets(
             requested_asset_types=assets,
             all_formats=all_formats,
-            only_changed=only_changed,  # Unless requested, generate all assets, so don't check the cache.
+            only_changed=
+            only_changed,  # Unless requested, generate all assets, so don't check the cache.
             xmlid=xmlid,
             non_pymupdf=non_pymupdf,
         )
@@ -596,6 +634,36 @@ def generate(
         log.critical("Generating assets as failed.  Exiting...")
         return
 
+
+# pretext webserver
+@main.command(
+    short_help="Start a webserver to view all local PreText projects",
+    context_settings=CONTEXT_SETTINGS,
+)
+@click.option(
+    "-p",
+    "--port",
+    type=click.INT,
+    default=8128,
+    help="""
+    If running a local server,
+    choose which port to use.
+    (Ignored when used
+    in CoCalc, which works automatically.)
+    """,
+)
+def webserver(port):
+    httpd = server.MyWebServer(port)
+    httpd.serve_forever()
+    log.info(f"port: {httpd.server_port}")
+
+
+@main.command(
+    short_help="Start watching the current directory as a PreText project",
+    context_settings=CONTEXT_SETTINGS)
+def watch():
+    dir_hash = server.register_current_directory()
+    print(dir_hash)
 
 # pretext view
 @main.command(
@@ -644,7 +712,8 @@ def generate(
 @click.option(
     "--no-launch",
     is_flag=True,
-    help="By default, pretext view tries to launch the default application to view the specified target.  Setting this suppresses this behavior.",
+    help=
+    "By default, pretext view tries to launch the default application to view the specified target.  Setting this suppresses this behavior.",
 )
 @click.option(
     "-r",
@@ -671,7 +740,8 @@ def generate(
     "--default-server",
     is_flag=True,
     default=False,
-    help="Use the standard python server, even if in a codespace (for debugging)",
+    help=
+    "Use the standard python server, even if in a codespace (for debugging)",
 )
 @nice_errors
 def view(
@@ -709,7 +779,8 @@ def view(
         return
     project = Project.parse()
     try:
-        target = project.get_target(name=target_name, log_info_for_none=not stage)
+        target = project.get_target(name=target_name,
+                                    log_info_for_none=not stage)
     except AssertionError as e:
         utils.show_target_hints(target_name, project, task="view")
         log.critical("Exiting.")
@@ -729,7 +800,8 @@ def view(
             target.build()
         except Exception as e:
             log.warning(f"Failed to build: {e}")
-            log.debug("Exception info:\n------------------------\n", exc_info=True)
+            log.debug("Exception info:\n------------------------\n",
+                      exc_info=True)
 
     # Set up the url path and target name
     if stage:
@@ -756,7 +828,9 @@ def view(
             log.info(f"The {target_name} will be available at {url}")
         else:
             SECONDS = 2
-            log.info(f"Opening browser for {target_name} at {url} in {SECONDS} seconds")
+            log.info(
+                f"Opening browser for {target_name} at {url} in {SECONDS} seconds"
+            )
             time.sleep(SECONDS)
             webbrowser.open(url)
         return
@@ -830,9 +904,8 @@ def view(
 @click.option("-u", "--update-source", is_flag=True, required=False)
 @click.option("-s", "--stage-only", is_flag=True, required=False)
 @click.option("-p", "--preview", is_flag=True, required=False)
-def deploy(
-    ctx: click.Context, update_source: bool, stage_only: bool, preview: bool
-) -> None:
+def deploy(ctx: click.Context, update_source: bool, stage_only: bool,
+           preview: bool) -> None:
     """
     Automatically deploys project to GitHub Pages,
     making it available to the general public.
@@ -861,7 +934,10 @@ def deploy(
 @nice_errors
 @click.pass_context
 @click.argument("latex_file", required=True)
-@click.option("-o", "--output", help="Specify output directory", required=False)
+@click.option("-o",
+              "--output",
+              help="Specify output directory",
+              required=False)
 def import_command(ctx: click.Context, latex_file: str, output: str) -> None:
     """
     Experimental: convert a latex file to pretext
@@ -892,5 +968,6 @@ def import_command(ctx: click.Context, latex_file: str, output: str) -> None:
                 log.debug(f"Conversion done in {temp_path}")
             except Exception as e:
                 log.error(e)
-                log.debug("Exception info:\n------------------------\n", exc_info=True)
+                log.debug("Exception info:\n------------------------\n",
+                          exc_info=True)
                 return
